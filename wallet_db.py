@@ -1,81 +1,71 @@
 import json
 import os
+from datetime import datetime
 
-DATA_DIR = "data"
-WALLET_FILE = os.path.join(DATA_DIR, "wallets.json")
-TOKEN_FILE = os.path.join(DATA_DIR, "tokens.json")
+DATA_FOLDER = "data"
+WALLET_FILE = os.path.join(DATA_FOLDER, "wallets.json")
 
+def _ensure_data_file():
+    os.makedirs(DATA_FOLDER, exist_ok=True)
+    if not os.path.exists(WALLET_FILE):
+        with open(WALLET_FILE, "w") as f:
+            json.dump([], f)
 
-def init():
-    os.makedirs(DATA_DIR, exist_ok=True)
-    for file in [WALLET_FILE, TOKEN_FILE]:
-        if not os.path.exists(file):
-            with open(file, "w") as f:
-                json.dump({}, f)  # initialize as dict for user-specific storage
-
-# ======================= WALLET FUNCTIONS =======================
-
-def get_wallets(user_id):
-    wallets = _read_json(WALLET_FILE)
-    return wallets.get(str(user_id), [])
-
-def add_wallet(user_id, address):
-    wallets = _read_json(WALLET_FILE)
-    uid = str(user_id)
-    if uid not in wallets:
-        wallets[uid] = []
-    if address in wallets[uid]:
-        return False
-    wallets[uid].append(address)
-    _write_json(WALLET_FILE, wallets)
-    return True
-
-def remove_wallet(user_id, address):
-    wallets = _read_json(WALLET_FILE)
-    uid = str(user_id)
-    if uid not in wallets or address not in wallets[uid]:
-        return False
-    wallets[uid].remove(address)
-    _write_json(WALLET_FILE, wallets)
-    return True
-
-def get_all_users():
-    wallets = _read_json(WALLET_FILE)
-    return list(wallets.keys())
-
-# ======================= TOKEN FUNCTIONS =======================
-
-def get_tokens(user_id):
-    tokens = _read_json(TOKEN_FILE)
-    return tokens.get(str(user_id), [])
-
-def add_token(user_id, token):
-    tokens = _read_json(TOKEN_FILE)
-    uid = str(user_id)
-    if uid not in tokens:
-        tokens[uid] = []
-    if token not in tokens[uid]:
-        tokens[uid].append(token)
-    _write_json(TOKEN_FILE, tokens)
-
-
-def clear_tokens(user_id):
-    tokens = _read_json(TOKEN_FILE)
-    uid = str(user_id)
-    tokens[uid] = []
-    _write_json(TOKEN_FILE, tokens)
-
-# ======================= JSON HELPERS =======================
-
-def _read_json(path):
-    if not os.path.exists(path):
-        return {}
-    with open(path, "r") as f:
-        try:
+def get_all_wallets():
+    _ensure_data_file()
+    try:
+        with open(WALLET_FILE, "r") as f:
             return json.load(f)
-        except:
-            return {}
+    except Exception:
+        return []
 
-def _write_json(path, data):
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
+def save_wallets(wallets):
+    with open(WALLET_FILE, "w") as f:
+        json.dump(wallets, f, indent=2)
+
+def add_wallet(address, source="manual"):
+    wallets = get_all_wallets()
+    if any(w.get("address") == address for w in wallets):
+        return "❗ Wallet already added."
+    new_entry = {
+        "address": address,
+        "source": source,
+        "added_at": datetime.utcnow().isoformat(),
+        "pnl": 0,
+        "autotrade": False,
+        "notes": ""
+    }
+    wallets.append(new_entry)
+    save_wallets(wallets)
+    return f"✅ Added wallet: {address}"
+
+def remove_wallet(address):
+    wallets = get_all_wallets()
+    updated = [w for w in wallets if w.get("address") != address]
+    if len(updated) == len(wallets):
+        return "❌ Wallet not found."
+    save_wallets(updated)
+    return f"🗑️ Removed wallet: {address}"
+
+def update_wallet_pnl(address, pnl_change):
+    wallets = get_all_wallets()
+    for w in wallets:
+        if w.get("address") == address:
+            w["pnl"] = w.get("pnl", 0) + pnl_change
+            break
+    save_wallets(wallets)
+
+def toggle_autotrade(address, state: bool):
+    wallets = get_all_wallets()
+    for w in wallets:
+        if w.get("address") == address:
+            w["autotrade"] = state
+            break
+    save_wallets(wallets)
+
+def get_wallet(address):
+    wallets = get_all_wallets()
+    for w in wallets:
+        if w.get("address") == address:
+            return w
+    return None
