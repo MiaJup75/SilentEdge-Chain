@@ -333,7 +333,7 @@ def inline_callback(update, context):
         query.answer("Unknown action.")
 
 # --- Webhook Route ---
-@app.route(f"/webhook/{TELEGRAM_TOKEN}", methods=["POST"])
+@app.route(f"/{TELEGRAM_TOKEN}", methods=["POST"])
 def webhook():
     if request.method == "POST":
         try:
