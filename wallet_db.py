@@ -1,63 +1,81 @@
 import json
 import os
 
-WALLET_FILE = "data/wallets.json"
-TOKEN_FILE = "data/tokens.json"
+DATA_DIR = "data"
+WALLET_FILE = os.path.join(DATA_DIR, "wallets.json")
+TOKEN_FILE = os.path.join(DATA_DIR, "tokens.json")
+
 
 def init():
-    os.makedirs("data", exist_ok=True)
+    os.makedirs(DATA_DIR, exist_ok=True)
     for file in [WALLET_FILE, TOKEN_FILE]:
         if not os.path.exists(file):
             with open(file, "w") as f:
-                json.dump([], f)
+                json.dump({}, f)  # initialize as dict for user-specific storage
 
-# ===== WALLET FUNCTIONS =====
-def get_all_wallets():
-    try:
-        with open(WALLET_FILE, "r") as f:
+# ======================= WALLET FUNCTIONS =======================
+
+def get_wallets(user_id):
+    wallets = _read_json(WALLET_FILE)
+    return wallets.get(str(user_id), [])
+
+def add_wallet(user_id, address):
+    wallets = _read_json(WALLET_FILE)
+    uid = str(user_id)
+    if uid not in wallets:
+        wallets[uid] = []
+    if address in wallets[uid]:
+        return False
+    wallets[uid].append(address)
+    _write_json(WALLET_FILE, wallets)
+    return True
+
+def remove_wallet(user_id, address):
+    wallets = _read_json(WALLET_FILE)
+    uid = str(user_id)
+    if uid not in wallets or address not in wallets[uid]:
+        return False
+    wallets[uid].remove(address)
+    _write_json(WALLET_FILE, wallets)
+    return True
+
+def get_all_users():
+    wallets = _read_json(WALLET_FILE)
+    return list(wallets.keys())
+
+# ======================= TOKEN FUNCTIONS =======================
+
+def get_tokens(user_id):
+    tokens = _read_json(TOKEN_FILE)
+    return tokens.get(str(user_id), [])
+
+def add_token(user_id, token):
+    tokens = _read_json(TOKEN_FILE)
+    uid = str(user_id)
+    if uid not in tokens:
+        tokens[uid] = []
+    if token not in tokens[uid]:
+        tokens[uid].append(token)
+    _write_json(TOKEN_FILE, tokens)
+
+
+def clear_tokens(user_id):
+    tokens = _read_json(TOKEN_FILE)
+    uid = str(user_id)
+    tokens[uid] = []
+    _write_json(TOKEN_FILE, tokens)
+
+# ======================= JSON HELPERS =======================
+
+def _read_json(path):
+    if not os.path.exists(path):
+        return {}
+    with open(path, "r") as f:
+        try:
             return json.load(f)
-    except:
-        return []
+        except:
+            return {}
 
-def save_wallets(wallets):
-    with open(WALLET_FILE, "w") as f:
-        json.dump(wallets, f, indent=2)
-
-def add_wallet(address):
-    wallets = get_all_wallets()
-    if address in [w["address"] for w in wallets]:
-        return "❗ Wallet already tracked."
-    wallets.append({"address": address, "value": 0})
-    save_wallets(wallets)
-    return f"✅ Added wallet: {address}"
-
-def remove_wallet(address):
-    wallets = get_all_wallets()
-    updated = [w for w in wallets if w["address"] != address]
-    if len(updated) == len(wallets):
-        return "❌ Wallet not found."
-    save_wallets(updated)
-    return f"🗑️ Removed wallet: {address}"
-
-def load_all():
-    get_all_wallets()
-
-# ===== TOKEN FUNCTIONS =====
-def get_all_tokens():
-    try:
-        with open(TOKEN_FILE, "r") as f:
-            return json.load(f)
-    except:
-        return []
-
-def save_tokens(tokens):
-    with open(TOKEN_FILE, "w") as f:
-        json.dump(tokens, f, indent=2)
-
-def add_token(symbol, price, market_cap):
-    tokens = get_all_tokens()
-    tokens.append({"symbol": symbol, "price": price, "market_cap": market_cap})
-    save_tokens(tokens)
-
-def clear_tokens():
-    save_tokens([])
+def _write_json(path, data):
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
