@@ -30,6 +30,7 @@ import utils.scanner as scanner_utils
 import utils.mirror as mirror_utils
 import utils.botnet as botnet_utils
 import utils.aiprompt as aiprompt_utils
+import utils.gpt as gpt_utils
 import wallet_db
 import token_db
 import mirror_db
@@ -90,6 +91,7 @@ def help_command(update, context):
         "/scanner <address> - Scan wallet\n"
         "/mirror <address> - Mirror tracking\n"
         "/aiprompt <prompt> - AI prompt\n"
+        "/chatgpt <prompt> – Ask elite ChatGPT assistant\n"
         "/botnet - Botnet detection\n"
         "/max - Max wallet stats\n"
         "/debug - Debug info\n"
@@ -279,7 +281,18 @@ def aiprompt(update, context):
     except Exception as e:
         logger.error(f"AI prompt error: {e}")
         update.message.reply_text("Error processing AI prompt.")
-
+@restricted
+def chatgpt(update, context):
+    prompt = " ".join(context.args)
+    if not prompt:
+        update.message.reply_text("Usage: /chatgpt <your prompt>")
+        return
+    try:
+        reply = gpt_utils.chat_with_gpt(prompt)
+        update.message.reply_text(reply)
+    except Exception as e:
+        logger.error(f"ChatGPT error: {e}\n{traceback.format_exc()}")
+        update.message.reply_text("Error contacting ChatGPT.")
 @restricted
 def botnet(update, context):
     user_id = update.effective_user.id
@@ -381,6 +394,7 @@ dispatcher.add_handler(CommandHandler("debug", debug))
 dispatcher.add_handler(CommandHandler("scanner", scanner))
 dispatcher.add_handler(CommandHandler("max", max_command))
 dispatcher.add_handler(CommandHandler("mirror", mirror))
+dispatcher.add_handler(CommandHandler("chatgpt", chatgpt))
 dispatcher.add_handler(CommandHandler("aiprompt", aiprompt))
 dispatcher.add_handler(CommandHandler("botnet", botnet))
 dispatcher.add_handler(CommandHandler("testlp", test_lp))
