@@ -1,67 +1,42 @@
-import logging
-from flask import Flask, request
-import telegram
-import utils
-import wallet_db
-import config as cfg
-from threading import Thread
+# SilentEdgeChainBot v1.1 – Deployment Guide (Render)
 
-app = Flask(__name__)
-bot = telegram.Bot(token=cfg.TELEGRAM_TOKEN)
+## ✅ Requirements
+- A free [Render.com](https://render.com) account
+- Telegram Bot Token from @BotFather
+- Webhook URL (can use Render URL once deployed)
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+## 📂 Files to Include
+- main.py
+- utils.py
+- wallet_db.py
+- config.py
+- render.yaml
+- requirements.txt
 
-# Global toggle
-bot_active = True
+## ⚙️ Setup Instructions (Render)
+1. **Push files to a GitHub repo**
+2. Go to Render > Create New > Web Service
+3. Connect to your GitHub repo
+4. Use `render.yaml` to auto-configure service
 
-def start_bot():
-    utils.init_db()
-    utils.load_watched_wallets()
-    utils.schedule_jobs(bot)
-    logger.info("SilentEdgeChainBot is running...")
+### 🧾 Required Environment Variables
+- `TELEGRAM_TOKEN` = Your Telegram bot token
+- `WEBHOOK_URL` = Full URL to this bot on Render (e.g., `https://your-bot.onrender.com`)
+- `PORT` = 8443
+- `RISK_MODE` = balanced *(or conservative / aggressive)*
 
-@app.route(f"/{cfg.TELEGRAM_TOKEN}", methods=["POST"])
-def webhook():
-    update = telegram.Update.de_json(request.get_json(force=True), bot)
-    if update.message:
-        handle_message(update.message)
-    elif update.callback_query:
-        handle_callback(update.callback_query)
-    return "OK"
+## 🧪 Test It
+1. Start the service on Render
+2. Go to Telegram, send `/start` to your bot
+3. Try `/wallets` or `/addwallet WALLET_ADDRESS`
 
-def handle_message(msg):
-    text = msg.text or ""
-    chat_id = msg.chat.id
+## 🔄 Risk Mode Behavior
+- Conservative = 0.25 SOL per trade
+- Balanced = 0.5 SOL *(default)*
+- Aggressive = 1.0 SOL per trade
 
-    if text == "/start":
-        bot.send_message(chat_id, "🤖 SilentEdgeChainBot is active.\nUse /wallets or /tokens to begin.")
-    elif text == "/wallets":
-        response = utils.list_wallets()
-        bot.send_message(chat_id, response, parse_mode=telegram.ParseMode.HTML)
-    elif text == "/tokens":
-        response = utils.list_tokens()
-        bot.send_message(chat_id, response, parse_mode=telegram.ParseMode.HTML)
-    elif text.startswith("/addwallet "):
-        addr = text.split(" ", 1)[1].strip()
-        result = wallet_db.add_wallet(addr)
-        bot.send_message(chat_id, result)
-    elif text == "/summary":
-        summary = utils.get_daily_summary()
-        bot.send_message(chat_id, summary, parse_mode=telegram.ParseMode.HTML)
-    else:
-        bot.send_message(chat_id, "Unknown command.")
+Edit `RISK_MODE` in your environment settings to adjust.
 
-def handle_callback(callback):
-    data = callback.data
-    chat_id = callback.message.chat.id
+---
 
-    if data.startswith("delwallet_"):
-        addr = data.replace("delwallet_", "")
-        result = wallet_db.remove_wallet(addr)
-        bot.edit_message_text(chat_id=chat_id, message_id=callback.message.message_id, text=result)
-
-if __name__ == "__main__":
-    utils.setup_webhook(app, cfg.TELEGRAM_TOKEN)
-    Thread(target=start_bot).start()
-    app.run(host="0.0.0.0", port=cfg.PORT)
+You're ready to trade silently. 🔱
