@@ -1,13 +1,11 @@
 import os
-import json
-import requests
 import sqlite3
 from apscheduler.schedulers.background import BackgroundScheduler
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+import requests
 import config as cfg
 
-scheduler = BackgroundScheduler()
 db_path = 'wallets.db'
+scheduler = BackgroundScheduler()
 
 def init_db():
     conn = sqlite3.connect(db_path)
@@ -17,8 +15,7 @@ def init_db():
     conn.close()
 
 def load_watched_wallets():
-    if not os.path.exists(db_path):
-        init_db()
+    pass  # placeholder for future cache preloading
 
 def add_wallet(address):
     conn = sqlite3.connect(db_path)
@@ -28,7 +25,7 @@ def add_wallet(address):
         conn.commit()
         return f"✅ Wallet added: {address}"
     except sqlite3.IntegrityError:
-        return f"⚠️ Wallet already tracked."
+        return f"⚠️ Wallet already exists."
     finally:
         conn.close()
 
@@ -48,10 +45,7 @@ def list_wallets():
     conn.close()
     if not rows:
         return "No wallets being tracked."
-    response = "<b>Tracked Wallets:</b>\n"
-    for row in rows:
-        response += f"<code>{row[0]}</code>\n"
-    return response
+    return "<b>Tracked Wallets:</b>\n" + "\n".join([f"<code>{row[0]}</code>" for row in rows])
 
 def list_tokens():
     return "Token tracking not implemented in this version."
@@ -63,5 +57,5 @@ def schedule_jobs(bot):
     scheduler.start()
 
 def setup_webhook(app, token):
-    url = f"{cfg.WEBHOOK_URL}/{token}"
-    requests.post(f"https://api.telegram.org/bot{token}/setWebhook", data={"url": url})
+    webhook_url = f"{cfg.WEBHOOK_URL}/{token}"
+    requests.post(f"https://api.telegram.org/bot{token}/setWebhook", data={"url": webhook_url})
