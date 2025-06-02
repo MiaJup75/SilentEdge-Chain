@@ -1,61 +1,126 @@
-import os
-import sqlite3
-from apscheduler.schedulers.background import BackgroundScheduler
+import logging
 import requests
-import config as cfg
+from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import datetime
+from config import DAILY_HOUR, TELEGRAM_TOKEN, WHITELIST
+import wallet_db
 
-db_path = 'wallets.db'
+bot = None
 scheduler = BackgroundScheduler()
 
+# ========== INIT & SETUP ==========
 def init_db():
-    conn = sqlite3.connect(db_path)
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS wallets (address TEXT PRIMARY KEY)''')
-    conn.commit()
-    conn.close()
+    wallet_db.init()
 
 def load_watched_wallets():
-    pass  # placeholder for future cache preloading
+    wallet_db.load_all()
 
-def add_wallet(address):
-    conn = sqlite3.connect(db_path)
-    c = conn.cursor()
+def send_message(chat_id, text, parse_mode=None):
+    import telegram
+    tbot = telegram.Bot(token=TELEGRAM_TOKEN)
+    tbot.send_message(chat_id=chat_id, text=text, parse_mode=parse_mode)
+
+# ========== TIER 1: DAILY SUMMARY ==========
+def get_daily_summary():
+    wallets = wallet_db.get_all_wallets()
+    lines = ["<b>📊 Daily Wallet Summary</b>"]
+    for w in wallets:
+        lines.append(f"\n<b>{w['address']}</b>\nValue: {w.get('value', 'N/A')} SOL")
+    return "\n".join(lines)
+
+def send_daily_report(bot):
+    summary = get_daily_summary()
+    for user in WHITELIST:
+        if user.strip():
+            try:
+                bot.send_message(chat_id=user.strip(), text=summary, parse_mode='HTML')
+            except Exception as e:
+                logging.error(f"Error sending to {user}: {e}")
+# ========== TIER 2: HONEYPOT SCANNER ==========
+def check_honeypot(token_address):
     try:
-        c.execute("INSERT INTO wallets (address) VALUES (?)", (address,))
-        conn.commit()
-        return f"✅ Wallet added: {address}"
-    except sqlite3.IntegrityError:
-        return f"⚠️ Wallet already exists."
-    finally:
-        conn.close()
+        response = requests.get(f"https://api.honeypot.is/v1/check/{token_address}")
+        result = response.json()
+        return result.get("status", "unknown")
+    except:
+        return "error"
 
-def remove_wallet(address):
-    conn = sqlite3.connect(db_path)
-    c = conn.cursor()
-    c.execute("DELETE FROM wallets WHERE address=?", (address,))
-    conn.commit()
-    conn.close()
-    return f"🗑️ Removed wallet: {address}"
+# ========== TIER 2: SOCIAL SIGNALS ==========
+def check_social_signals(token_name):
+    trending_tokens = ["DEGEN", "DOGWIFHAT", "BOME"]
+    return token_name.upper() in trending_tokens
 
+# ========== TIER 3: STEALTH RADAR + PRICE ALERTS ==========
+def stealth_launch_detected(token):
+    return token.get("lp_locked", 0) > 50 and token.get("age_mins", 0) < 10
+
+def check_price_target(current_price, target_price):
+    return current_price >= target_price
+
+# ========== TIER 4: AI SIGNALS + NARRATIVES ==========
+def ai_buy_signal(token):
+    score = token.get("momentum", 0) + token.get("volume_change", 0)
+    return score > 15
+
+def classify_narrative(token):
+    name = token["name"].lower()
+    if "dog" in name:
+        return "Meme"
+    elif "ai" in name:
+        return "AI"
+    elif "eth" in name:
+        return "Layer 2"
+    return "Unclassified"
+
+# ========== TIER 5: WATCHLIST TOOLS ==========
 def list_wallets():
-    conn = sqlite3.connect(db_path)
-    c = conn.cursor()
-    c.execute("SELECT address FROM wallets")
-    rows = c.fetchall()
-    conn.close()
-    if not rows:
+    wallets = wallet_db.get_all_wallets()
+    if not wallets:
         return "No wallets being tracked."
-    return "<b>Tracked Wallets:</b>\n" + "\n".join([f"<code>{row[0]}</code>" for row in rows])
+    return "\n".join([f"{w['address']}" for w in wallets])
 
 def list_tokens():
-    return "Token tracking not implemented in this version."
+    tokens = wallet_db.get_all_tokens()
+    if not tokens:
+        return "No tokens tracked."
+    out = []
+    for t in tokens:
+        out.append(f"<b>{t['symbol']}</b>\nPrice: {t['price']} | Market Cap: {t['market_cap']}\n")
+    return "\n".join(out)
 
-def get_daily_summary():
-    return "Daily summary feature is under development."
+# ========== TIER 6: INLINE CONTROLS ==========
+def build_inline_buttons(wallets):
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+    buttons = []
+    for w in wallets:
+        buttons.append([
+            InlineKeyboardButton(f"Remove {w['address'][:6]}...", callback_data=f"delwallet_{w['address']}")
+        ])
+    return InlineKeyboardMarkup(buttons)
 
-def schedule_jobs(bot):
-    scheduler.start()
-
+# ========== TIER 7: WEBHOOK + AUTONOMY ==========
 def setup_webhook(app, token):
-    webhook_url = f"{cfg.WEBHOOK_URL}/{token}"
-    requests.post(f"https://api.telegram.org/bot{token}/setWebhook", data={"url": webhook_url})
+    url = get_webhook_url(token)
+    try:
+        import telegram
+        tbot = telegram.Bot(token=token)
+        tbot.set_webhook(url)
+        logging.info(f"Webhook set to {url}")
+    except Exception as e:
+        logging.error(f"Failed to set webhook: {e}")
+
+def get_webhook_url(token):
+    from config import WEBHOOK_URL
+    return f"{WEBHOOK_URL}/{token}"
+
+# ========== SCHEDULER ==========
+def schedule_jobs(bot_instance):
+    global bot
+    bot = bot_instance
+    scheduler.add_job(
+        func=lambda: send_daily_report(bot),
+        trigger="cron",
+        hour=DAILY_HOUR,
+        timezone="Asia/Bangkok"
+    )
+    scheduler.start()
