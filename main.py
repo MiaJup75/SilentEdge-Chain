@@ -6,6 +6,7 @@ import traceback
 from flask import Flask, request, abort
 from threading import Thread
 from apscheduler.schedulers.background import BackgroundScheduler
+import pytz
 import telegram
 from telegram import (
     Update,
@@ -388,7 +389,7 @@ dispatcher.add_handler(CallbackQueryHandler(inline_callback))
 # --- Scheduler Startup ---
 def start_scheduler():
     scheduler = BackgroundScheduler()
-    scheduler.add_job(daily_summary_job, "cron", hour=8, minute=0)
+    scheduler.add_job(daily_summary_job, "cron", hour=8, minute=0, timezone=pytz.timezone("Asia/Bangkok"))
     scheduler.add_job(mirror_tracking_job, "interval", minutes=30)
     scheduler.add_job(botnet_detection_job, "cron", hour=4, minute=0)
     scheduler.start()
