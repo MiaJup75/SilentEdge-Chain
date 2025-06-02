@@ -72,9 +72,21 @@ def restricted(func):
 # --- Command Handlers ---
 @restricted
 def start(update, context):
-    update.message.reply_text(
-        "👋 Welcome! Use /help for a list of commands."
+    user_id = update.effective_user.id
+    welcome = (
+        "👋 *Welcome to SilentEdgeChainBot!*\n\n"
+        "Explore cutting-edge crypto tracking tools.\n"
+        "Use the buttons below or type /help for all commands."
     )
+    keyboard = [
+        [InlineKeyboardButton("📊 Wallets", callback_data="quick_wallets"),
+         InlineKeyboardButton("🪙 Tokens", callback_data="quick_tokens")],
+        [InlineKeyboardButton("📈 Summary", callback_data="quick_summary"),
+         InlineKeyboardButton("⚠️ Alerts", callback_data="quick_alerts")],
+        [InlineKeyboardButton("🧠 AI Assistant", callback_data="quick_ai")],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    update.message.reply_text(welcome, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
 
 @restricted
 def help_command(update, context):
@@ -98,6 +110,31 @@ def help_command(update, context):
         "/help - This help message"
     )
     update.message.reply_text(help_text, parse_mode=ParseMode.MARKDOWN)
+
+@restricted
+def register_commands(update, context):
+    commands = [
+        ("start", "Start and show welcome menu"),
+        ("help", "Show available bot commands"),
+        ("wallets", "List your tracked wallets"),
+        ("tokens", "List your tracked tokens"),
+        ("addwallet", "Add wallet address"),
+        ("removewallet", "Remove wallet"),
+        ("summary", "Get daily wallet summary"),
+        ("alerts", "Toggle alerts on/off"),
+        ("watch", "Watch token"),
+        ("addtoken", "Add token"),
+        ("scanner", "Scan wallet"),
+        ("mirror", "Enable mirror tracking"),
+        ("chatgpt", "Ask ChatGPT anything"),
+        ("aiprompt", "AI prompt"),
+        ("botnet", "Botnet scan"),
+        ("max", "Wallet stats"),
+        ("debug", "Show debug info"),
+        ("testlp", "Trigger LP test")
+    ]
+    bot.set_my_commands([telegram.BotCommand(c, d) for c, d in commands])
+    update.message.reply_text("✅ Bot commands registered with Telegram.")
 
 @restricted
 def wallets(update, context):
@@ -318,20 +355,73 @@ def test_lp(update, context):
         update.message.reply_text("LP test failed.")
 
 # --- Inline Button Handlers ---
+# --- Inline Button Callback Handler ---
 def inline_callback(update, context):
     query = update.callback_query
     data = query.data
     user_id = query.from_user.id
-    # Route to appropriate callback
-    if data.startswith("toggle_"):
-        alert_callback(update, context)
+
+    if data == "quick_wallets":
+        wallets = wallet_db.get_wallets(user_id)
+        if not wallets:
+            query.answer("No wallets found.")
+        else:
+            msg = "💼 *Your Wallets:*\n" + "\n".join(f"- `{w}`" for w in wallets)
+            query.message.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
+
+    elif data == "quick_tokens":
+        tokens = token_db.get_tokens(user_id)
+        if not tokens:
+            query.answer("No tokens tracked.")
+        else:
+            msg = "🪙 *Tracked Tokens:*\n" + "\n".join(f"- `{t}`" for t in tokens)
+            query.message.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
+
+    elif data == "quick_summary":
+        wallets = wallet_db.get_wallets(user_id)
+        if not wallets:
+            query.message.reply_text("No wallets to summarize.")
+        else:
+            try:
+                summary = summary_utils.get_summary(wallets)
+                query.message.reply_text(summary, parse_mode=ParseMode.MARKDOWN)
+            except Exception as e:
+                logger.error(f"Summary error: {e}")
+                query.message.reply_text("Error generating summary.")
+
+    elif data == "quick_alerts":
+        settings = alerts_utils.get_alert_settings(user_id)
+        keyboard = [
+            [InlineKeyboardButton(f"Price Alerts: {'On' if settings['price'] else 'Off'}", callback_data="toggle_price")],
+            [InlineKeyboardButton(f"Volume Alerts: {'On' if settings['volume'] else 'Off'}", callback_data="toggle_volume")]
+        ]
+        query.message.reply_text("⚠️ Alert Settings:", reply_markup=InlineKeyboardMarkup(keyboard))
+
+    elif data == "quick_ai":
+        query.message.reply_text("Try asking ChatGPT:\n/chatgpt What’s the best meme coin today?")
+
+    elif data == "toggle_price":
+        alerts_utils.toggle_alert(user_id, "price")
+        query.answer("Toggled price alerts.")
+    elif data == "toggle_volume":
+        alerts_utils.toggle_alert(user_id, "volume")
+        query.answer("Toggled volume alerts.")
+
+    elif data == "show_help":
+        help_command(update, context)
+
+    elif data == "add_wallet":
+        query.message.reply_text("Use /addwallet <address> to track a wallet.")
+
+    elif data == "chatgpt_sample":
+        query.message.reply_text("Ask anything using /chatgpt — e.g.\n/chatgpt Suggest 3 trending coins")
+
     elif data.startswith("mirror_"):
-        # Example: mirror enable/disable
         mirror_utils.toggle_mirror(user_id, data.split("_", 1)[1])
         query.answer("Mirror toggled.")
-    else:
-        query.answer("Unknown action.")
 
+    else:
+        query.answer("Unrecognized action.")
 # --- Webhook Route ---
 @app.route(f"/{TELEGRAM_TOKEN}", methods=["POST"])
 def webhook():
@@ -382,6 +472,7 @@ def botnet_detection_job():
 # --- Register Handlers ---
 dispatcher.add_handler(CommandHandler("start", start))
 dispatcher.add_handler(CommandHandler("help", help_command))
+dispatcher.add_handler(CommandHandler("register", register_commands))
 dispatcher.add_handler(CommandHandler("wallets", wallets))
 dispatcher.add_handler(CommandHandler("tokens", tokens))
 dispatcher.add_handler(CommandHandler("addwallet", addwallet))
