@@ -4,6 +4,9 @@ import os
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 PORT = int(os.environ.get("PORT", 10000))
 
+# Webhook URL for Render or custom domain (used for webhook setup)
+WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://silentedgechainbot.onrender.com")  # Replace if needed
+
 # Risk Mode: conservative / balanced / aggressive
 RISK_MODE = os.getenv("RISK_MODE", "balanced").lower()
 
