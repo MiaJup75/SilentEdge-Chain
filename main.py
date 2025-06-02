@@ -12,9 +12,6 @@ bot = telegram.Bot(token=cfg.TELEGRAM_TOKEN)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Global toggle
-bot_active = True
-
 def start_bot():
     utils.init_db()
     utils.load_watched_wallets()
@@ -36,24 +33,39 @@ def handle_message(msg):
 
     if text == "/start":
         bot.send_message(chat_id, "🤖 SilentEdgeChainBot is active.\nUse /wallets or /tokens to begin.")
+    elif text == "/help":
+        help_msg = (
+            "<b>Available Commands:</b>\n"
+            "/wallets – Show tracked wallets\n"
+            "/addwallet WALLET – Add wallet\n"
+            "/removewallet WALLET – Remove wallet\n"
+            "/tokens – List tracked tokens\n"
+            "/summary – Daily summary\n"
+            "/testlp – Simulate LP launch\n"
+            "/riskmode – Show current risk mode\n"
+        )
+        bot.send_message(chat_id, help_msg, parse_mode=telegram.ParseMode.HTML)
     elif text == "/wallets":
         response = utils.list_wallets()
-        bot.send_message(chat_id, response, parse_mode=telegram.ParseMode.HTML)
-    elif text == "/tokens":
-        response = utils.list_tokens()
         bot.send_message(chat_id, response, parse_mode=telegram.ParseMode.HTML)
     elif text.startswith("/addwallet "):
         addr = text.split(" ", 1)[1].strip()
         result = wallet_db.add_wallet(addr)
         bot.send_message(chat_id, result)
-    elif text == "/summary":
-        summary = utils.get_daily_summary()
-        bot.send_message(chat_id, summary, parse_mode=telegram.ParseMode.HTML)
     elif text.startswith("/removewallet "):
         addr = text.split(" ", 1)[1].strip()
         result = wallet_db.remove_wallet(addr)
         bot.send_message(chat_id, result)
-    elif text.startswith("/testlp"):
+    elif text == "/tokens":
+        response = utils.list_tokens()
+        bot.send_message(chat_id, response, parse_mode=telegram.ParseMode.HTML)
+    elif text == "/summary":
+        summary = utils.get_daily_summary()
+        bot.send_message(chat_id, summary, parse_mode=telegram.ParseMode.HTML)
+    elif text == "/riskmode":
+        from config import RISK_MODE
+        bot.send_message(chat_id, f"<b>Current Risk Mode:</b> {RISK_MODE.capitalize()}", parse_mode=telegram.ParseMode.HTML)
+    elif text == "/testlp":
         from config import RISK_MODE
         trade_amounts = {
             "conservative": 0.25,
@@ -61,21 +73,20 @@ def handle_message(msg):
             "aggressive": 1.0
         }
         amount = trade_amounts.get(RISK_MODE, 0.5)
-
         bot.send_message(chat_id, f"""
 🚀 <b>Simulated LP Launch Detected</b>
 • Token: TEST123
 • Risk Mode: <b>{RISK_MODE.capitalize()}</b>
 • Executing test trade...
 • Sent: <b>{amount} SOL</b>
+<b>You're ready to trade silently.</b> 🛡️
         """, parse_mode=telegram.ParseMode.HTML)
     else:
-        bot.send_message(chat_id, "Unknown command.")
+        bot.send_message(chat_id, "Unknown command. Type /help to see available options.")
 
 def handle_callback(callback):
     data = callback.data
     chat_id = callback.message.chat.id
-
     if data.startswith("delwallet_"):
         addr = data.replace("delwallet_", "")
         result = wallet_db.remove_wallet(addr)
