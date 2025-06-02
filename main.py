@@ -390,8 +390,8 @@ dispatcher.add_handler(CallbackQueryHandler(inline_callback))
 def start_scheduler():
     scheduler = BackgroundScheduler()
     scheduler.add_job(daily_summary_job, "cron", hour=8, minute=0, timezone=pytz.timezone("Asia/Bangkok"))
-    scheduler.add_job(mirror_tracking_job, "interval", minutes=30)
-    scheduler.add_job(botnet_detection_job, "cron", hour=4, minute=0)
+    scheduler.add_job(mirror_tracking_job, "interval", minutes=30, timezone=pytz.timezone("Asia/Bangkok"))
+    scheduler.add_job(botnet_detection_job, "cron", hour=4, minute=0, timezone=pytz.timezone("Asia/Bangkok"))
     scheduler.start()
     logger.info("Scheduler started.")
 
