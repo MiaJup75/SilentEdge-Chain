@@ -1,7 +1,6 @@
 # utils/trade.py
 
 def execute_buy(token_symbol, amount_sol, user_id):
-    # Placeholder logic to simulate a successful buy
     return {
         "status": "success",
         "tx_hash": "placeholder_tx_hash",
@@ -11,7 +10,6 @@ def execute_buy(token_symbol, amount_sol, user_id):
     }
 
 def execute_sale(token_symbol, amount_token, user_id):
-    # Placeholder logic to simulate a successful sell
     return {
         "status": "success",
         "tx_hash": "placeholder_tx_hash",
@@ -21,7 +19,7 @@ def execute_sale(token_symbol, amount_token, user_id):
     }
 
 def get_wallet_pnl(user_id):
-    # Placeholder PnL logic
+    # Simulated PnL response
     return {
         "user": user_id,
         "tokens": [
@@ -33,3 +31,9 @@ def get_wallet_pnl(user_id):
         "profit": 92.0,
         "return_pct": 115.0
     }
+
+def get_trade_history(user_id):
+    return [
+        {"token": "BONK", "action": "buy", "amount": 1000000, "price": 0.00001, "timestamp": "2025-06-03T14:25:00Z"},
+        {"token": "SOL", "action": "buy", "amount": 0.5, "price": 150.0, "timestamp": "2025-06-03T14:26:00Z"}
+    ]
