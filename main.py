@@ -367,18 +367,24 @@ def test_lp(update, context):
 
 @restricted
 def buy_command(update, context):
+    user_id = update.effective_user.id
+
+    if len(context.args) < 2:
+        update.message.reply_text("Usage: /buy <TOKEN> <AMOUNT>\nExample: /buy BONK 0.1")
+        return
+
+    token = context.args[0].upper()
     try:
-        token_address = context.args[0]
         sol_amount = float(context.args[1])
-        user_id = update.effective_user.id
-        mev_safe = mev_utils.scan_token(token_address)
-        if not mev_safe:
-            update.message.reply_text("❌ MEV risk detected. Trade blocked.")
-            return
-        result = trade_utils.execute_trade(token_address, sol_amount)
+    except ValueError:
+        update.message.reply_text("❌ Invalid amount. Use a number like 0.1")
+        return
+
+    try:
+        result = trade_utils.execute_buy(token, sol_amount, user_id)
         update.message.reply_text(f"✅ Trade executed:\n{result}")
     except Exception as e:
-        logger.error(f"Buy error: {e}\n{traceback.format_exc()}")
+        logger.error(f"Buy error: {e}")
         update.message.reply_text("❌ Buy command failed.")
 
 @restricted
