@@ -115,6 +115,7 @@ def help_command(update, context):
         "/help – This help message"
         "/debug - Debug info\n"
         "/help - This help message"
+        ("mev", "Check MEV activity")
     )
     update.message.reply_text(help_text, parse_mode=ParseMode.MARKDOWN)
 
@@ -418,6 +419,15 @@ def trades_command(update, context):
         logger.error(f"Trade history error: {e}")
         update.message.reply_text("❌ Could not fetch trades.")
 
+@restricted
+def mev_command(update, context):
+    try:
+        status = mev_utils.simulate_mev_check()
+        update.message.reply_text(f"🛡️ MEV Check:\n{status}")
+    except Exception as e:
+        logger.error(f"MEV error: {e}")
+        update.message.reply_text("❌ MEV check failed.")
+
 
 
 # --- Inline Button Handlers ---
@@ -560,6 +570,7 @@ dispatcher.add_handler(CommandHandler("buy", buy_command))
 dispatcher.add_handler(CommandHandler("sell", sell_command))
 dispatcher.add_handler(CommandHandler("pnl", pnl_command))
 dispatcher.add_handler(CommandHandler("trades", trades_command))
+dispatcher.add_handler(CommandHandler("mev", mev_command))
 
 # --- Scheduler Startup ---
 def start_scheduler():
