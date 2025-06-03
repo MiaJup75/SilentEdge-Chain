@@ -138,11 +138,11 @@ def register_commands(update, context):
         ("botnet", "Botnet scan"),
         ("max", "Wallet stats"),
         ("debug", "Show debug info"),
-        ("testlp", "Trigger LP test")
         ("buy", "Buy a token"),
         ("sell", "Sell a token"),
         ("pnl", "Portfolio PnL stats"),
         ("mev", "Check MEV activity"),
+         ("testlp", "Trigger LP test")
     ]
     bot.set_my_commands([telegram.BotCommand(c, d) for c, d in commands])
     update.message.reply_text("✅ Bot commands registered with Telegram.")
