@@ -393,7 +393,7 @@ def sell_command(update, context):
     try:
         token_address = context.args[0]
         token_amount = float(context.args[1])
-        result = trade_utils.execute_sale(token_address, token_amount)
+        result = trade_utils.execute_sale(token_address, token_amount, user_id)
         update.message.reply_text(f"✅ Sell executed:\n{result}")
     except Exception as e:
         logger.error(f"Sell error: {e}\n{traceback.format_exc()}")
@@ -422,7 +422,11 @@ def trades_command(update, context):
 @restricted
 def mev_command(update, context):
     try:
-        status = mev_utils.simulate_mev_check()
+        if not context.args:
+            update.message.reply_text("Usage: /mev <TOKEN>\nExample: /mev BONK")
+            return
+        token_symbol = context.args[0].upper()
+        status = mev_utils.simulate_mev_check(token_symbol)
         update.message.reply_text(f"🛡️ MEV Check:\n{status}")
     except Exception as e:
         logger.error(f"MEV error: {e}")
