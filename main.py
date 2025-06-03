@@ -8,6 +8,8 @@ from threading import Thread
 from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
 import telegram
+import utils.trade as trade_utils
+import utils.mev as mev_utils
 from telegram import (
     Update,
     InlineKeyboardButton,
@@ -106,6 +108,11 @@ def help_command(update, context):
         "/chatgpt <prompt> – Ask elite ChatGPT assistant\n"
         "/botnet - Botnet detection\n"
         "/max - Max wallet stats\n"
+        "/buy <token> – Buy token\n"
+        "/sell <token> – Sell token\n"
+        "/pnl – View portfolio PnL\n"
+        "/mev – Check MEV activity\n"
+        "/help – This help message"
         "/debug - Debug info\n"
         "/help - This help message"
     )
@@ -132,6 +139,10 @@ def register_commands(update, context):
         ("max", "Wallet stats"),
         ("debug", "Show debug info"),
         ("testlp", "Trigger LP test")
+        ("buy", "Buy a token"),
+        ("sell", "Sell a token"),
+        ("pnl", "Portfolio PnL stats"),
+        ("mev", "Check MEV activity"),
     ]
     bot.set_my_commands([telegram.BotCommand(c, d) for c, d in commands])
     update.message.reply_text("✅ Bot commands registered with Telegram.")
@@ -354,6 +365,55 @@ def test_lp(update, context):
         logger.error(f"LP test error: {e}")
         update.message.reply_text("LP test failed.")
 
+@restricted
+def buy_command(update, context):
+    try:
+        token_address = context.args[0]
+        sol_amount = float(context.args[1])
+        user_id = update.effective_user.id
+        mev_safe = mev_utils.scan_token(token_address)
+        if not mev_safe:
+            update.message.reply_text("❌ MEV risk detected. Trade blocked.")
+            return
+        result = trade_utils.execute_trade(token_address, sol_amount)
+        update.message.reply_text(f"✅ Trade executed:\n{result}")
+    except Exception as e:
+        logger.error(f"Buy error: {e}\n{traceback.format_exc()}")
+        update.message.reply_text("❌ Buy command failed.")
+
+@restricted
+def sell_command(update, context):
+    try:
+        token_address = context.args[0]
+        token_amount = float(context.args[1])
+        result = trade_utils.execute_sale(token_address, token_amount)
+        update.message.reply_text(f"✅ Sell executed:\n{result}")
+    except Exception as e:
+        logger.error(f"Sell error: {e}\n{traceback.format_exc()}")
+        update.message.reply_text("❌ Sell command failed.")
+
+@restricted
+def pnl_command(update, context):
+    try:
+        user_id = update.effective_user.id
+        result = trade_utils.get_wallet_pnl(user_id)
+        update.message.reply_text(f"📈 PnL Report:\n{result}")
+    except Exception as e:
+        logger.error(f"PnL error: {e}")
+        update.message.reply_text("❌ Could not fetch PnL.")
+
+@restricted
+def trades_command(update, context):
+    try:
+        user_id = update.effective_user.id
+        result = trade_utils.get_trade_history(user_id)
+        update.message.reply_text(f"📜 Trade History:\n{result}")
+    except Exception as e:
+        logger.error(f"Trade history error: {e}")
+        update.message.reply_text("❌ Could not fetch trades.")
+
+
+
 # --- Inline Button Handlers ---
 # --- Inline Button Callback Handler ---
 def inline_callback(update, context):
@@ -490,6 +550,10 @@ dispatcher.add_handler(CommandHandler("aiprompt", aiprompt))
 dispatcher.add_handler(CommandHandler("botnet", botnet))
 dispatcher.add_handler(CommandHandler("testlp", test_lp))
 dispatcher.add_handler(CallbackQueryHandler(inline_callback))
+dispatcher.add_handler(CommandHandler("buy", buy_command))
+dispatcher.add_handler(CommandHandler("sell", sell_command))
+dispatcher.add_handler(CommandHandler("pnl", pnl_command))
+dispatcher.add_handler(CommandHandler("trades", trades_command))
 
 # --- Scheduler Startup ---
 def start_scheduler():
