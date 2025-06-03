@@ -112,7 +112,7 @@ def help_command(update, context):
         "/sell <token> – Sell token\n"
         "/pnl – View portfolio PnL\n"
         "/mev – Check MEV activity\n"
-        "/help – This help message"\n
+        "/help – This help message\n"
         "/debug - Debug info\n"
 
     )
