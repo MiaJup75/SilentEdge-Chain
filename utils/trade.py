@@ -10,7 +10,7 @@ def execute_buy(token_symbol, amount_sol, user_id):
         "user": user_id
     }
 
-def execute_sell(token_symbol, amount_token, user_id):
+def execute_sale(token_symbol, amount_token, user_id):
     # Placeholder logic to simulate a successful sell
     return {
         "status": "success",
