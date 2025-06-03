@@ -112,10 +112,9 @@ def help_command(update, context):
         "/sell <token> – Sell token\n"
         "/pnl – View portfolio PnL\n"
         "/mev – Check MEV activity\n"
-        "/help – This help message"
+        "/help – This help message"\n
         "/debug - Debug info\n"
-        "/help - This help message"
-        ("mev", "Check MEV activity")
+
     )
     update.message.reply_text(help_text, parse_mode=ParseMode.MARKDOWN)
 
@@ -143,7 +142,8 @@ def register_commands(update, context):
         ("sell", "Sell a token"),
         ("pnl", "Portfolio PnL stats"),
         ("mev", "Check MEV activity"),
-         ("testlp", "Trigger LP test")
+        ("trades", "Trade history"),
+        ("testlp", "Trigger LP test")
     ]
     bot.set_my_commands([telegram.BotCommand(c, d) for c, d in commands])
     update.message.reply_text("✅ Bot commands registered with Telegram.")
