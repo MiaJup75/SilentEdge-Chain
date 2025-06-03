@@ -393,6 +393,7 @@ def sell_command(update, context):
     try:
         token_address = context.args[0]
         token_amount = float(context.args[1])
+        user_id = update.effective_user.id
         result = trade_utils.execute_sale(token_address, token_amount, user_id)
         update.message.reply_text(f"✅ Sell executed:\n{result}")
     except Exception as e:
