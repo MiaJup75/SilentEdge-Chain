@@ -134,29 +134,28 @@ def guide(update, context):
 def register_commands(update, context):
     commands = [
         ("start", "Start and show welcome menu"),
-        ("help", "Show available bot commands"),
         ("guide", "Feature walkthrough guide"),
+        ("guide_menu", "Interactive bot guide"),
         ("wallets", "List your tracked wallets"),
         ("tokens", "List your tracked tokens"),
         ("addwallet", "Add wallet address"),
         ("removewallet", "Remove wallet"),
         ("summary", "Get daily wallet summary"),
         ("alerts", "Toggle alerts on/off"),
-        ("watch", "Watch token"),
-        ("addtoken", "Add token"),
-        ("scanner", "Scan wallet"),
-        ("mirror", "Enable mirror tracking"),
-        ("chatgpt", "Ask ChatGPT anything"),
-        ("aiprompt", "AI prompt"),
-        ("botnet", "Botnet scan"),
-        ("max", "Wallet stats"),
-        ("debug", "Show debug info"),
         ("buy", "Buy a token"),
         ("sell", "Sell a token"),
         ("pnl", "Portfolio PnL stats"),
-        ("mev", "Check MEV activity"),
         ("trades", "Trade history"),
-        ("testlp", "Trigger LP test")
+        ("watch", "Watch token"),
+        ("scanner", "Scan wallet"),
+        ("mirror", "Enable mirror tracking"),
+        ("mev", "Check MEV activity"),
+        ("botnet", "Botnet scan"),
+        ("chatgpt", "Ask ChatGPT anything"),
+        ("aiprompt", "AI prompt"),
+        ("debug", "Show debug info"),
+        ("testlp", "Trigger LP test"),
+        ("help", "Show available bot commands")
     ]
     bot.set_my_commands([telegram.BotCommand(c, d) for c, d in commands])
     update.message.reply_text("✅ Bot commands registered with Telegram.")
@@ -527,7 +526,7 @@ def tracktoken_command(update, context):
                 "network": "Solana"
             }
 
-        if wallet in tokens[symbol]["tracked_wallets"]:
+        if (wallet_id, token_address) in tracked:
         update.message.reply_text(f"⚠️ Already tracking this combo.")
         return
 
@@ -538,6 +537,17 @@ def tracktoken_command(update, context):
     except Exception as e:
         logger.error(f"/tracktoken error: {e}")
         update.message.reply_text("❌ Failed to set tracking.")
+
+@restricted
+def guide_menu(update, context):
+    keyboard = [
+        [InlineKeyboardButton("📊 Portfolio Tools", callback_data="guide_portfolio")],
+        [InlineKeyboardButton("🧠 AI + GPT", callback_data="guide_ai")],
+        [InlineKeyboardButton("⚠️ Suspicious Activity", callback_data="guide_alerts")],
+        [InlineKeyboardButton("🛠️ Wallet & Token Tools", callback_data="guide_wallets")],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    update.message.reply_text("📘 *Explore SilentEdge Features:*\nTap a category below to learn more.", parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
 
 # --- Inline Button Handlers ---
 # --- Inline Button Callback Handler ---
@@ -624,6 +634,42 @@ def inline_callback(update, context):
 
     else:
         query.answer("Unrecognized action.")
+        
+    elif data == "guide_portfolio":
+        query.answer()
+        query.edit_message_text(
+            "📊 *Portfolio Tools:*\n"
+            "/pnl – View profits and returns\n"
+            "/trades – See trade history\n"
+            "/buy /sell – Execute test trades",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+    elif data == "guide_ai":
+        query.answer()
+        query.edit_message_text(
+            "🧠 *AI Assistants:*\n"
+            "/aiprompt – Generate trading ideas\n"
+            "/chatgpt – Ask anything with ChatGPT",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+    elif data == "guide_alerts":
+        query.answer()
+        query.edit_message_text(
+            "⚠️ *Alerts & Bot Detection:*\n"
+            "/mev – Check MEV risk\n"
+            "/botnet – Scan for botnet-linked wallets",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+    elif data == "guide_wallets":
+        query.answer()
+        query.edit_message_text(
+            "🛠️ *Wallet & Token Tools:*\n"
+            "/wallets, /tokens – View assets\n"
+            "/addwallet /removewallet – Manage addresses\n"
+            "/watch /scanner /mirror – Monitoring tools",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+
 # --- Webhook Route ---
 @app.route(f"/{TELEGRAM_TOKEN}", methods=["POST"])
 def webhook():
@@ -737,6 +783,7 @@ dispatcher.add_handler(CommandHandler("viewtrack", viewtrack_command))
 dispatcher.add_handler(MessageHandler(Filters.text & (~Filters.command), handle_rename_text))
 dispatcher.add_handler(CallbackQueryHandler(inline_callback))
 dispatcher.add_handler(MessageHandler(Filters.text & Filters.reply, rename_token_handler))
+dispatcher.add_handler(CommandHandler("guide_menu", guide_menu))
 
 
 def run_auto_alerts():
