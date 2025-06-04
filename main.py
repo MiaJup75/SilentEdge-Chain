@@ -489,6 +489,7 @@ def tracktoken_command(update, context):
         symbol = resolved_name or token[-4:].upper()
 
         tokens = get_tracked_tokens()
+
         if symbol not in tokens:
             tokens[symbol] = {
                 "name": resolved_name or f"Token {symbol}",
@@ -503,6 +504,7 @@ def tracktoken_command(update, context):
             update.message.reply_text(f"✅ Now tracking {symbol} for wallet ending in ...{wallet[-6:]}")
         else:
             update.message.reply_text(f"⚠️ Already tracking this combo.")
+
     except Exception as e:
         logger.error(f"/tracktoken error: {e}")
         update.message.reply_text("❌ Failed to set tracking.")
