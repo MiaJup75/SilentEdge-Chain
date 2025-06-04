@@ -608,67 +608,70 @@ def inline_callback(update, context):
     elif data == "add_wallet":
         query.message.reply_text("Use /addwallet <address> to track a wallet.")
 
-    elif data == "chatgpt_sample":
-        query.message.reply_text("Ask anything using /chatgpt — e.g.\n/chatgpt Suggest 3 trending coins")
+   elif data == "chatgpt_sample":
+    query.message.reply_text("Ask anything using /chatgpt – e.g.\n/chatgpt Suggest 3 trending coins")
 
-    elif data.startswith("untrack|"):
-        _, symbol, wallet = data.split("|")
-        from wallet_db import get_tracked_tokens, save_tracked_tokens
-        tokens = get_tracked_tokens()
-        if symbol in tokens and wallet in tokens[symbol]["tracked_wallets"]:
-            tokens[symbol]["tracked_wallets"].remove(wallet)
-            save_tracked_tokens(tokens)
-            query.answer("🗑️ Untracked.")
-            query.edit_message_text(f"🗑️ Untracked {symbol} for wallet ending in ...{wallet[-6:]}")
-        else:
-            query.answer("⚠️ Not found.")
+elif data.startswith("untrack|"):
+    _, symbol, wallet = data.split("|")
+    from wallet_db import get_tracked_tokens, save_tracked_tokens
+    tokens = get_tracked_tokens()
+    if symbol in tokens and wallet in tokens[symbol]["tracked_wallets"]:
+        tokens[symbol]["tracked_wallets"].remove(wallet)
+        save_tracked_tokens(tokens)
+        query.answer("🗑️ Untracked.")
+        query.edit_message_text(f"🗑️ Untracked {symbol} for wallet ending in ...{wallet[-6:]}")
+    else:
+        query.answer("⚠️ Not found.")
 
-    elif data.startswith("rename|"):
-        symbol = data.split("|")[1]
-        context.user_data["rename_symbol"] = symbol
-        query.answer("📝 Send the new name you want.")
-    
-    elif data.startswith("mirror_"):
-        mirror_utils.toggle_mirror(user_id, data.split("_", 1)[1])
-        query.answer("Mirror toggled.")
+elif data.startswith("rename|"):
+    symbol = data.split("|")[1]
+    context.user_data["rename_symbol"] = symbol
+    query.answer("📝 Send the new name you want.")
 
-        else:
-            query.answer("Unrecognized action.")
-        
-    elif data == "guide_portfolio":
-        query.answer()
-        query.edit_message_text(
-            "📊 *Portfolio Tools:*\n"
-            "/pnl – View profits and returns\n"
-            "/trades – See trade history\n"
-            "/buy /sell – Execute test trades",
-            parse_mode=ParseMode.MARKDOWN,
-        )
-    elif data == "guide_ai":
-        query.answer()
-        query.edit_message_text(
-            "🧠 *AI Assistants:*\n"
-            "/aiprompt – Generate trading ideas\n"
-            "/chatgpt – Ask anything with ChatGPT",
-            parse_mode=ParseMode.MARKDOWN,
-        )
-    elif data == "guide_alerts":
-        query.answer()
-        query.edit_message_text(
-            "⚠️ *Alerts & Bot Detection:*\n"
-            "/mev – Check MEV risk\n"
-            "/botnet – Scan for botnet-linked wallets",
-            parse_mode=ParseMode.MARKDOWN,
-        )
-    elif data == "guide_wallets":
-        query.answer()
-        query.edit_message_text(
-            "🛠️ *Wallet & Token Tools:*\n"
-            "/wallets, /tokens – View assets\n"
-            "/addwallet /removewallet – Manage addresses\n"
-            "/watch /scanner /mirror – Monitoring tools",
-            parse_mode=ParseMode.MARKDOWN,
-        )
+elif data.startswith("mirror_"):
+    mirror_utils.toggle_mirror(user_id, data.split("_", 1)[1])
+    query.answer("Mirror toggled.")
+
+elif data == "guide_portfolio":
+    query.answer()
+    query.edit_message_text(
+        "📊 *Portfolio Tools:*\n"
+        "/pnl – View profits and returns\n"
+        "/trades – See trade history\n"
+        "/buy /sell – Execute test trades",
+        parse_mode=ParseMode.MARKDOWN,
+    )
+
+elif data == "guide_ai":
+    query.answer()
+    query.edit_message_text(
+        "🧠 *AI Assistants:*\n"
+        "/aiprompt – Generate trading ideas\n"
+        "/chatgpt – Ask anything with ChatGPT",
+        parse_mode=ParseMode.MARKDOWN,
+    )
+
+elif data == "guide_alerts":
+    query.answer()
+    query.edit_message_text(
+        "⚠️ *Alerts & Bot Detection:*\n"
+        "/mev – Check MEV risk\n"
+        "/botnet – Scan for botnet-linked wallets",
+        parse_mode=ParseMode.MARKDOWN,
+    )
+
+elif data == "guide_wallets":
+    query.answer()
+    query.edit_message_text(
+        "🪪 *Wallet & Token Tools:*\n"
+        "/wallets, /tokens – View assets\n"
+        "/addwallet /removewallet – Manage addresses\n"
+        "/watch /scanner /mirror – Monitoring tools",
+        parse_mode=ParseMode.MARKDOWN,
+    )
+
+else:
+    query.answer("Unrecognized action.")
 
 # --- Webhook Route ---
 @app.route(f"/{TELEGRAM_TOKEN}", methods=["POST"])
