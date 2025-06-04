@@ -605,10 +605,10 @@ def inline_callback(update, context):
     elif data == "show_help":
         help_command(update, context)
 
-    elif data == "add_wallet":
+      elif data == "add_wallet":
         query.message.reply_text("Use /addwallet <address> to track a wallet.")
 
-           elif data == "chatgpt_sample":
+    elif data == "chatgpt_sample":
         query.message.reply_text("Ask anything using /chatgpt – e.g.\n/chatgpt Suggest 3 trending coins")
 
     elif data.startswith("untrack|"):
@@ -669,10 +669,6 @@ def inline_callback(update, context):
             "/watch /scanner /mirror – Monitoring tools",
             parse_mode=ParseMode.MARKDOWN,
         )
-
-    else:
-        query.answer("Unrecognized action.")
-
 # --- Webhook Route ---
 @app.route(f"/{TELEGRAM_TOKEN}", methods=["POST"])
 def webhook():
