@@ -623,7 +623,7 @@ def inline_callback(update, context):
         else:
             query.answer("⚠️ Not found.")
 
-        elif data.startswith("rename|"):
+    elif data.startswith("rename|"):
         symbol = data.split("|")[1]
         context.user_data["rename_symbol"] = symbol
         query.answer("📝 Send the new name you want.")
