@@ -448,7 +448,11 @@ def alerts_command(update, context):
         logger.error(f"Alerts error: {e}")
         update.message.reply_text("❌ Could not check token activity.")
 
+@restricted
 def viewtrack_command(update, context):
+    from wallet_db import get_tracked_tokens, save_tracked_tokens
+    from utils.token_lookup import get_token_name
+
     tokens = get_tracked_tokens()
     if not tokens:
         update.message.reply_text("❌ No tokens or wallets being tracked.")
@@ -459,6 +463,14 @@ def viewtrack_command(update, context):
         token_address = data.get("address")
         wallets = data.get("tracked_wallets", [])
 
+        # Try resolving if name is still generic
+        if name == symbol or name == f"Token {symbol}":
+            resolved = get_token_name(token_address)
+            if resolved:
+                tokens[symbol]["name"] = resolved
+                name = resolved
+                save_tracked_tokens(tokens)
+
         for wallet in wallets:
             short_wallet = wallet[:4] + "..." + wallet[-4:]
             text = f"""
@@ -466,6 +478,12 @@ def viewtrack_command(update, context):
 📬 Wallet: <code>{short_wallet}</code>
 🔗 <a href='https://solscan.io/token/{token_address}'>View Token</a>
 """
+            keyboard = [[
+                InlineKeyboardButton("🗑️ Untrack", callback_data=f"untrack|{symbol}|{wallet}"),
+                InlineKeyboardButton("✏️ Rename", callback_data=f"rename|{symbol}")
+            ]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            update.message.reply_text(text, reply_markup=reply_markup, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
             keyboard = [[
                 InlineKeyboardButton("🗑️ Untrack", callback_data=f"untrack|{symbol}|{wallet}"),
                 InlineKeyboardButton("✏️ Rename", callback_data=f"rename|{symbol}")
