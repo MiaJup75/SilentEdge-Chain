@@ -570,7 +570,7 @@ def inline_callback(update, context):
         query.message.reply_text("Ask anything using /chatgpt — e.g.\n/chatgpt Suggest 3 trending coins")
 
     elif data.startswith("untrack|"):
-    _, symbol, wallet = data.split("|")
+        _, symbol, wallet = data.split("|")
     from wallet_db import get_tracked_tokens, save_tracked_tokens
     tokens = get_tracked_tokens()
     if symbol in tokens and wallet in tokens[symbol]["tracked_wallets"]:
