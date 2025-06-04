@@ -632,8 +632,8 @@ def inline_callback(update, context):
         mirror_utils.toggle_mirror(user_id, data.split("_", 1)[1])
         query.answer("Mirror toggled.")
 
-    else:
-        query.answer("Unrecognized action.")
+        else:
+            query.answer("Unrecognized action.")
         
     elif data == "guide_portfolio":
         query.answer()
