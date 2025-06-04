@@ -608,7 +608,7 @@ def inline_callback(update, context):
     elif data == "add_wallet":
         query.message.reply_text("Use /addwallet <address> to track a wallet.")
 
-       elif data == "chatgpt_sample":
+           elif data == "chatgpt_sample":
         query.message.reply_text("Ask anything using /chatgpt – e.g.\n/chatgpt Suggest 3 trending coins")
 
     elif data.startswith("untrack|"):
@@ -641,32 +641,33 @@ def inline_callback(update, context):
             "/buy /sell – Execute test trades",
             parse_mode=ParseMode.MARKDOWN,
         )
+
     elif data == "guide_ai":
         query.answer()
         query.edit_message_text(
-        "🧠 *AI Assistants:*\n"
-        "/aiprompt – Generate trading ideas\n"
-        "/chatgpt – Ask anything with ChatGPT",
-        parse_mode=ParseMode.MARKDOWN,
+            "🧠 *AI Assistants:*\n"
+            "/aiprompt – Generate trading ideas\n"
+            "/chatgpt – Ask anything with ChatGPT",
+            parse_mode=ParseMode.MARKDOWN,
         )
 
     elif data == "guide_alerts":
         query.answer()
         query.edit_message_text(
-        "⚠️ *Alerts & Bot Detection:*\n"
-        "/mev – Check MEV risk\n"
-        "/botnet – Scan for botnet-linked wallets",
-        parse_mode=ParseMode.MARKDOWN,
+            "⚠️ *Alerts & Bot Detection:*\n"
+            "/mev – Check MEV risk\n"
+            "/botnet – Scan for botnet-linked wallets",
+            parse_mode=ParseMode.MARKDOWN,
         )
 
     elif data == "guide_wallets":
         query.answer()
         query.edit_message_text(
-        "🪪 *Wallet & Token Tools:*\n"
-        "/wallets, /tokens – View assets\n"
-        "/addwallet /removewallet – Manage addresses\n"
-        "/watch /scanner /mirror – Monitoring tools",
-        parse_mode=ParseMode.MARKDOWN,
+            "🧾 *Wallet & Token Tools:*\n"
+            "/wallets, /tokens – View assets\n"
+            "/addwallet /removewallet – Manage addresses\n"
+            "/watch /scanner /mirror – Monitoring tools",
+            parse_mode=ParseMode.MARKDOWN,
         )
 
     else:
