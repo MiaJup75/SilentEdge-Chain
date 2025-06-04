@@ -4,12 +4,16 @@ from datetime import datetime
 
 DATA_FOLDER = "data"
 WALLET_FILE = os.path.join(DATA_FOLDER, "wallets.json")
+TOKENS_FILE = os.path.join(DATA_FOLDER, "tracked_tokens.json")
 
 def _ensure_data_file():
     os.makedirs(DATA_FOLDER, exist_ok=True)
     if not os.path.exists(WALLET_FILE):
         with open(WALLET_FILE, "w") as f:
             json.dump([], f)
+    if not os.path.exists(TOKENS_FILE):
+        with open(TOKENS_FILE, "w") as f:
+            json.dump({}, f)
 
 def get_all_wallets():
     _ensure_data_file()
@@ -69,3 +73,33 @@ def get_wallet(address):
         if w.get("address") == address:
             return w
     return None
+
+def get_tracked_tokens():
+    _ensure_data_file()
+    try:
+        with open(TOKENS_FILE, "r") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def save_tracked_tokens(tokens):
+    with open(TOKENS_FILE, "w") as f:
+        json.dump(tokens, f, indent=2)
+
+def add_tracked_token(symbol, name, address, tracked_wallets, network="Solana"):
+    tokens = get_tracked_tokens()
+    tokens[symbol] = {
+        "name": name,
+        "address": address,
+        "tracked_wallets": tracked_wallets,
+        "network": network
+    }
+    save_tracked_tokens(tokens)
+    return f"✅ Tracking token: {symbol}"
+
+def get_tracked_token(symbol):
+    return get_tracked_tokens().get(symbol)
+
+def get_tokens_for_wallet(wallet_address):
+    tokens = get_tracked_tokens()
+    return [symbol for symbol, data in tokens.items() if wallet_address in data.get("tracked_wallets", [])]
