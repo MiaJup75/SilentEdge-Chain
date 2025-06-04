@@ -446,7 +446,35 @@ def alerts_command(update, context):
     except Exception as e:
         logger.error(f"Alerts error: {e}")
         update.message.reply_text("❌ Could not check token activity.")
+@restricted
+def tracktoken_command(update, context):
+    try:
+        if len(context.args) != 2:
+            update.message.reply_text("Usage:\n/tracktoken <WALLET_ADDRESS> <TOKEN_ADDRESS>")
+            return
 
+        wallet, token = context.args
+        symbol = token[-4:].upper()  # Temporary symbol from token
+
+        from wallet_db import get_tracked_tokens, save_tracked_tokens
+        tokens = get_tracked_tokens()
+        if symbol not in tokens:
+            tokens[symbol] = {
+                "name": f"Token {symbol}",
+                "address": token,
+                "tracked_wallets": [],
+                "network": "Solana"
+            }
+
+        if wallet not in tokens[symbol]["tracked_wallets"]:
+            tokens[symbol]["tracked_wallets"].append(wallet)
+            save_tracked_tokens(tokens)
+            update.message.reply_text(f"✅ Now tracking {symbol} for wallet ending in ...{wallet[-6:]}")
+        else:
+            update.message.reply_text(f"⚠️ Already tracking this combo.")
+    except Exception as e:
+        logger.error(f"/tracktoken error: {e}")
+        update.message.reply_text("❌ Failed to set tracking.")
 
 # --- Inline Button Handlers ---
 # --- Inline Button Callback Handler ---
@@ -590,6 +618,7 @@ dispatcher.add_handler(CommandHandler("pnl", pnl_command))
 dispatcher.add_handler(CommandHandler("trades", trades_command))
 dispatcher.add_handler(CommandHandler("mev", mev_command))
 dispatcher.add_handler(CommandHandler("alerts", alerts_command))
+dispatcher.add_handler(CommandHandler("tracktoken", tracktoken_command))
 
 def run_auto_alerts():
     try:
