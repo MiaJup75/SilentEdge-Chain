@@ -37,6 +37,7 @@ import wallet_db
 import token_db
 import mirror_db
 import ai_db
+from utils.token_tracker import check_token_alerts
 
 # --- Config ---
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
@@ -433,6 +434,18 @@ def mev_command(update, context):
         logger.error(f"MEV error: {e}")
         update.message.reply_text("❌ MEV check failed.")
 
+@restricted
+def alerts_command(update, context):
+    try:
+        alerts = check_token_alerts()
+        if not alerts:
+            update.message.reply_text("✅ No token activity detected.")
+            return
+        for alert in alerts:
+            update.message.reply_text(alert, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
+    except Exception as e:
+        logger.error(f"Alerts error: {e}")
+        update.message.reply_text("❌ Could not check token activity.")
 
 
 # --- Inline Button Handlers ---
@@ -576,6 +589,16 @@ dispatcher.add_handler(CommandHandler("sell", sell_command))
 dispatcher.add_handler(CommandHandler("pnl", pnl_command))
 dispatcher.add_handler(CommandHandler("trades", trades_command))
 dispatcher.add_handler(CommandHandler("mev", mev_command))
+dispatcher.add_handler(CommandHandler("alerts", alerts_command))
+
+def run_auto_alerts():
+    try:
+        alerts = check_token_alerts()
+        for alert in alerts:
+            for user_id in FRIEND_WHITELIST:
+                bot.send_message(chat_id=user_id, text=alert, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
+    except Exception as e:
+        logger.error(f"Auto alert error: {e}")
 
 # --- Scheduler Startup ---
 def start_scheduler():
@@ -583,6 +606,7 @@ def start_scheduler():
     scheduler.add_job(daily_summary_job, "cron", hour=8, minute=0, timezone=pytz.timezone("Asia/Bangkok"))
     scheduler.add_job(mirror_tracking_job, "interval", minutes=30, timezone=pytz.timezone("Asia/Bangkok"))
     scheduler.add_job(botnet_detection_job, "cron", hour=4, minute=0, timezone=pytz.timezone("Asia/Bangkok"))
+    scheduler.add_job(run_auto_alerts, "interval", minutes=5, timezone=pytz.timezone("Asia/Bangkok"))
     scheduler.start()
     logger.info("Scheduler started.")
 
