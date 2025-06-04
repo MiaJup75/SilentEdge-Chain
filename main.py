@@ -608,20 +608,20 @@ def inline_callback(update, context):
     elif data == "add_wallet":
         query.message.reply_text("Use /addwallet <address> to track a wallet.")
 
-   elif data == "chatgpt_sample":
-    query.message.reply_text("Ask anything using /chatgpt – e.g.\n/chatgpt Suggest 3 trending coins")
+       elif data == "chatgpt_sample":
+        query.message.reply_text("Ask anything using /chatgpt – e.g.\n/chatgpt Suggest 3 trending coins")
 
     elif data.startswith("untrack|"):
         _, symbol, wallet = data.split("|")
         from wallet_db import get_tracked_tokens, save_tracked_tokens
         tokens = get_tracked_tokens()
         if symbol in tokens and wallet in tokens[symbol]["tracked_wallets"]:
-        tokens[symbol]["tracked_wallets"].remove(wallet)
-        save_tracked_tokens(tokens)
-        query.answer("🗑️ Untracked.")
-        query.edit_message_text(f"🗑️ Untracked {symbol} for wallet ending in ...{wallet[-6:]}")
+            tokens[symbol]["tracked_wallets"].remove(wallet)
+            save_tracked_tokens(tokens)
+            query.answer("🗑️ Untracked.")
+            query.edit_message_text(f"🗑️ Untracked {symbol} for wallet ending in ...{wallet[-6:]}")
         else:
-        query.answer("⚠️ Not found.")
+            query.answer("⚠️ Not found.")
 
     elif data.startswith("rename|"):
         symbol = data.split("|")[1]
@@ -635,13 +635,12 @@ def inline_callback(update, context):
     elif data == "guide_portfolio":
         query.answer()
         query.edit_message_text(
-        "📊 *Portfolio Tools:*\n"
-        "/pnl – View profits and returns\n"
-        "/trades – See trade history\n"
-        "/buy /sell – Execute test trades",
-        parse_mode=ParseMode.MARKDOWN,
+            "📊 *Portfolio Tools:*\n"
+            "/pnl – View profits and returns\n"
+            "/trades – See trade history\n"
+            "/buy /sell – Execute test trades",
+            parse_mode=ParseMode.MARKDOWN,
         )
-
     elif data == "guide_ai":
         query.answer()
         query.edit_message_text(
