@@ -446,6 +446,32 @@ def alerts_command(update, context):
     except Exception as e:
         logger.error(f"Alerts error: {e}")
         update.message.reply_text("❌ Could not check token activity.")
+
+def viewtrack_command(update, context):
+    tokens = get_tracked_tokens()
+    if not tokens:
+        update.message.reply_text("❌ No tokens or wallets being tracked.")
+        return
+
+    for symbol, data in tokens.items():
+        name = data.get("name", symbol)
+        token_address = data.get("address")
+        wallets = data.get("tracked_wallets", [])
+
+        for wallet in wallets:
+            short_wallet = wallet[:4] + "..." + wallet[-4:]
+            text = f"""
+<b>👀 Tracking:</b> <b>{name}</b>
+📬 Wallet: <code>{short_wallet}</code>
+🔗 <a href='https://solscan.io/token/{token_address}'>View Token</a>
+"""
+            keyboard = [[
+                InlineKeyboardButton("🗑️ Untrack", callback_data=f"untrack|{symbol}|{wallet}"),
+                InlineKeyboardButton("✏️ Rename", callback_data=f"rename|{symbol}")
+            ]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            update.message.reply_text(text, reply_markup=reply_markup, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
+            
 @restricted
 def tracktoken_command(update, context):
     try:
@@ -557,6 +583,19 @@ def webhook():
     else:
         abort(403)
 
+def handle_rename_text(update, context):
+    if "renaming_symbol" in context.user_data:
+        symbol = context.user_data.pop("renaming_symbol")
+        new_name = update.message.text.strip()
+        from wallet_db import get_tracked_tokens, save_tracked_tokens
+        tokens = get_tracked_tokens()
+        if symbol in tokens:
+            tokens[symbol]["name"] = new_name
+            save_tracked_tokens(tokens)
+            update.message.reply_text(f"✅ Renamed {symbol} to <b>{new_name}</b>", parse_mode=ParseMode.HTML)
+        else:
+            update.message.reply_text("❌ Token not found.")
+
 # --- Scheduler Jobs ---
 def daily_summary_job():
     logger.info("Running daily summary job...")
@@ -619,6 +658,8 @@ dispatcher.add_handler(CommandHandler("trades", trades_command))
 dispatcher.add_handler(CommandHandler("mev", mev_command))
 dispatcher.add_handler(CommandHandler("alerts", alerts_command))
 dispatcher.add_handler(CommandHandler("tracktoken", tracktoken_command))
+dispatcher.add_handler(CommandHandler("viewtrack", viewtrack_command))
+dispatcher.add_handler(MessageHandler(Filters.text & (~Filters.command), handle_rename_text))
 
 def run_auto_alerts():
     try:
