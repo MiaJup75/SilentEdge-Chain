@@ -527,8 +527,8 @@ def tracktoken_command(update, context):
             }
 
         if (wallet_id, token_address) in tracked:
-        update.message.reply_text(f"⚠️ Already tracking this combo.")
-        return
+            update.message.reply_text(f"⚠️ Already tracking this combo.")
+            return
 
         tokens[symbol]["tracked_wallets"].append(wallet)
         save_tracked_tokens(tokens)
