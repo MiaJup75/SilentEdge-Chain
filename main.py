@@ -480,13 +480,17 @@ def tracktoken_command(update, context):
             return
 
         wallet, token = context.args
-        symbol = token[-4:].upper()  # Temporary symbol from token
 
         from wallet_db import get_tracked_tokens, save_tracked_tokens
+        from utils.token_lookup import get_token_name
+
+        resolved_name = get_token_name(token)
+        symbol = resolved_name or token[-4:].upper()
+
         tokens = get_tracked_tokens()
         if symbol not in tokens:
             tokens[symbol] = {
-                "name": f"Token {symbol}",
+                "name": resolved_name or f"Token {symbol}",
                 "address": token,
                 "tracked_wallets": [],
                 "network": "Solana"
