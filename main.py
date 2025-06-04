@@ -516,12 +516,13 @@ def tracktoken_command(update, context):
                 "network": "Solana"
             }
 
-        if wallet not in tokens[symbol]["tracked_wallets"]:
-            tokens[symbol]["tracked_wallets"].append(wallet)
-            save_tracked_tokens(tokens)
-            update.message.reply_text(f"✅ Now tracking {symbol} for wallet ending in ...{wallet[-6:]}")
-        else:
-            update.message.reply_text(f"⚠️ Already tracking this combo.")
+        if wallet in tokens[symbol]["tracked_wallets"]:
+        update.message.reply_text(f"⚠️ Already tracking this combo.")
+        return
+
+        tokens[symbol]["tracked_wallets"].append(wallet)
+        save_tracked_tokens(tokens)
+        update.message.reply_text(f"✅ Now tracking {symbol} for wallet ending in ...{wallet[-6:]}")
 
     except Exception as e:
         logger.error(f"/tracktoken error: {e}")
@@ -600,6 +601,11 @@ def inline_callback(update, context):
             query.edit_message_text(f"🗑️ Untracked {symbol} for wallet ending in ...{wallet[-6:]}")
         else:
             query.answer("⚠️ Not found.")
+
+        elif data.startswith("rename|"):
+        symbol = data.split("|")[1]
+        context.user_data["rename_symbol"] = symbol
+        query.answer("📝 Send the new name you want.")
     
     elif data.startswith("mirror_"):
         mirror_utils.toggle_mirror(user_id, data.split("_", 1)[1])
@@ -632,6 +638,26 @@ def handle_rename_text(update, context):
             update.message.reply_text(f"✅ Renamed {symbol} to <b>{new_name}</b>", parse_mode=ParseMode.HTML)
         else:
             update.message.reply_text("❌ Token not found.")
+
+@restricted
+def rename_token_handler(update, context):
+    user_id = update.effective_user.id
+    new_name = update.message.text
+    symbol = context.user_data.get("rename_symbol")
+
+    if not symbol:
+        update.message.reply_text("⚠️ No token selected to rename.")
+        return
+
+    tokens = get_tracked_tokens()
+    if symbol not in tokens:
+        update.message.reply_text(f"❌ Token {symbol} not found.")
+        return
+
+    tokens[symbol]["name"] = new_name
+    save_tracked_tokens(tokens)
+    update.message.reply_text(f"✅ Renamed {symbol} to *{new_name}*", parse_mode=ParseMode.MARKDOWN)
+    context.user_data.pop("rename_symbol", None)
 
 # --- Scheduler Jobs ---
 def daily_summary_job():
@@ -698,6 +724,7 @@ dispatcher.add_handler(CommandHandler("tracktoken", tracktoken_command))
 dispatcher.add_handler(CommandHandler("viewtrack", viewtrack_command))
 dispatcher.add_handler(MessageHandler(Filters.text & (~Filters.command), handle_rename_text))
 dispatcher.add_handler(CallbackQueryHandler(inline_callback))
+dispatcher.add_handler(MessageHandler(Filters.text & Filters.reply, rename_token_handler))
 
 def run_auto_alerts():
     try:
