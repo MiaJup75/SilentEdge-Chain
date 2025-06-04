@@ -121,10 +121,20 @@ def help_command(update, context):
     update.message.reply_text(help_text, parse_mode=ParseMode.MARKDOWN)
 
 @restricted
+def guide(update, context):
+    guide_message = get_guide_message()
+    update.message.reply_text(
+        guide_message,
+        parse_mode=ParseMode.HTML,
+        disable_web_page_preview=True
+    )
+
+@restricted
 def register_commands(update, context):
     commands = [
         ("start", "Start and show welcome menu"),
         ("help", "Show available bot commands"),
+        ("guide", "Feature walkthrough guide"),
         ("wallets", "List your tracked wallets"),
         ("tokens", "List your tracked tokens"),
         ("addwallet", "Add wallet address"),
@@ -696,6 +706,7 @@ def botnet_detection_job():
 # --- Register Handlers ---
 dispatcher.add_handler(CommandHandler("start", start))
 dispatcher.add_handler(CommandHandler("help", help_command))
+dispatcher.add_handler(CommandHandler("guide", guide))
 dispatcher.add_handler(CommandHandler("register", register_commands))
 dispatcher.add_handler(CommandHandler("wallets", wallets))
 dispatcher.add_handler(CommandHandler("tokens", tokens))
@@ -725,6 +736,7 @@ dispatcher.add_handler(CommandHandler("viewtrack", viewtrack_command))
 dispatcher.add_handler(MessageHandler(Filters.text & (~Filters.command), handle_rename_text))
 dispatcher.add_handler(CallbackQueryHandler(inline_callback))
 dispatcher.add_handler(MessageHandler(Filters.text & Filters.reply, rename_token_handler))
+
 
 def run_auto_alerts():
     try:
